@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Regex Validation Tests — Book & Notes Vault</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 720px;
+      margin: 40px auto;
+      padding: 0 20px;
+      background: #f9f7f4;
+      color: #1e1b18;
+      line-height: 1.6;
+    }
+    h1 { color: #5b3e2b; margin-bottom: 8px; }
+    p.subtitle { color: #6b5e4a; margin-bottom: 24px; }
+    .test-block {
+      background: #fff;
+      border: 1px solid #e0d5c7;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .test-block h2 { margin-top: 0; font-size: 1rem; color: #5b3e2b; }
+    .pattern { font-family: monospace; background: #f3ede7; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; }
+    .case { padding: 4px 0; font-size: 0.9rem; }
+    .pass { color: #2d6a4f; }
+    .fail { color: #c0392b; }
+    .pass::before { content: '✅ '; }
+    .fail::before { content: '❌ '; }
+    .summary { background: #fff; border: 1px solid #e0d5c7; border-radius: 8px; padding: 16px; margin-top: 24px; }
+    .summary.passed { border-color: #2d6a4f; }
+    .summary.failed { border-color: #c0392b; }
+    hr { border: none; border-top: 1px solid #e0d5c7; margin: 24px 0; }
+  </style>
+</head>
+<body>
+  <h1>Regex Validation Tests</h1>
+  <p class="subtitle">Book & Notes Vault — Verifying all 5 rules + 1 advanced (back-reference)</p>
+
+  <div id="results"></div>
+
+  <script>
+    // ─── Custom assertion framework ──────────────────────────
+    let total = 0;
+    let passed = 0;
+    let failed = 0;
+    const log = [];
+
+    function assert(condition, message) {
+      total++;
+      if (condition) {
+        passed++;
+        log.push({ pass: true, message });
+      } else {
+        failed++;
+        log.push({ pass: false, message });
+      }
+    }
+
+    // ─── Regex patterns (must match validators.js) ──────────
+    const RULES = {
+      title: /^\S(?:.*\S)?$/,
+      titleNoSpaces: /\s{2,}/,
+      author: /^[A-Za-z]+(?:[ .\-]+[A-Za-z]+)*$/,
+      pages: /^(0|[1-9]\d*)$/,
+      date: /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/,
+      tag: /^[A-Za-z]+(?:[ -][A-Za-z]+)*$/,
+      duplicateWords: /\b(\w+)\s+\1\b/i,
+    };
+
+    // ─── Run tests ──────────────────────────────────────────
+
+    // Rule 1: Title
+    console.log('--- Title ---');
+    assert(RULES.title.test('The Pragmatic Programmer'), 'Title: valid book title passes');
+    assert(RULES.title.test('A'), 'Title: single character passes');
+    assert(!RULES.title.test(''), 'Title: empty string fails');
+    assert(!RULES.title.test('  leading'), 'Title: leading space fails');
+    assert(!RULES.title.test('trailing  '), 'Title: trailing space fails');
+    assert(RULES.titleNoSpaces.test('double  space'), 'Title: double space fails');
+
+    // Rule 2: Author
+    console.log('--- Author ---');
+    assert(RULES.author.test('David Thomas'), 'Author: simple name passes');
+    assert(RULES.author.test('J.R.R. Tolkien'), 'Author: initials with periods passes');
+    assert(RULES.author.test('Jean-Luc Picard'), 'Author: hyphenated name passes');
+    assert(!RULES.author.test('David123'), 'Author: digits fail');
+    assert(!RULES.author.test(''), 'Author: empty fails');
+
+    // Rule 3: Pages
+    console.log('--- Pages ---');
+    assert(RULES.pages.test('1'), 'Pages: 1 passes');
+    assert(RULES.pages.test('352'), 'Pages: 352 passes');
+    assert(RULES.pages.test('0'), 'Pages: 0 passes');
+    assert(RULES.pages.test('9999'), 'Pages: 9999 passes');
+    assert(!RULES.pages.test('-5'), 'Pages: negative fails');
+    assert(!RULES.pages.test('3.5'), 'Pages: decimal fails');
+    assert(!RULES.pages.test(''), 'Pages: empty fails');
+    assert(!RULES.pages.test('01'), 'Pages: leading zero fails');
+
+    // Rule 4: Date
+    console.log('--- Date ---');
+    assert(RULES.date.test('2025-06-15'), 'Date: valid date passes');
+    assert(RULES.date.test('2025-01-01'), 'Date: Jan 1 passes');
+    assert(RULES.date.test('2025-12-31'), 'Date: Dec 31 passes');
+    assert(!RULES.date.test('2025-13-01'), 'Date: month 13 fails');
+    assert(!RULES.date.test('2025-00-01'), 'Date: month 0 fails');
+    assert(!RULES.date.test('2025-06-32'), 'Date: day 32 fails');
+    assert(!RULES.date.test('25-06-15'), 'Date: short year fails');
+
+    // Rule 5: Tag
+    console.log('--- Tag ---');
+    assert(RULES.tag.test('Fiction'), 'Tag: simple tag passes');
+    assert(RULES.tag.test('Non-Fiction'), 'Tag: hyphenated tag passes');
+    assert(RULES.tag.test('Data Science'), 'Tag: space-separated passes');
+    assert(!RULES.tag.test('123'), 'Tag: digits fail');
+    assert(!RULES.tag.test(''), 'Tag: empty fails');
+
+    // Advanced: Duplicate words (back-reference)
+    console.log('--- Duplicate Words ---');
+    assert(RULES.duplicateWords.test('The The Book'), 'DupWords: "The The" detected');
+    assert(RULES.duplicateWords.test('hello hello world'), 'DupWords: "hello hello" detected');
+    assert(RULES.duplicateWords.test('This is is wrong'), 'DupWords: "is is" detected');
+    assert(!RULES.duplicateWords.test('The Book'), 'DupWords: normal text passes');
+    assert(!RULES.duplicateWords.test('Hello World'), 'DupWords: different words passes');
+    assert(!RULES.duplicateWords.test(''), 'DupWords: empty passes');
+
+    // ─── Render results ─────────────────────────────────────
+    const resultsEl = document.getElementById('results');
+
+    let html = '';
+
+    // Group by rule
+    const groups = [
+      { name: 'Rule 1: Title', pattern: RULES.title.source, tests: log.slice(0, 6) },
+      { name: 'Rule 2: Author', pattern: RULES.author.source, tests: log.slice(6, 11) },
+      { name: 'Rule 3: Pages', pattern: RULES.pages.source, tests: log.slice(11, 19) },
+      { name: 'Rule 4: Date', pattern: RULES.date.source, tests: log.slice(19, 26) },
+      { name: 'Rule 5: Tag', pattern: RULES.tag.source, tests: log.slice(26, 31) },
+      { name: 'Advanced: Duplicate Words', pattern: RULES.duplicateWords.source, tests: log.slice(31) },
+    ];
+
+    groups.forEach((group) => {
+      html += `<div class="test-block">`;
+      html += `<h2>${group.name}</h2>`;
+      html += `<p>Pattern: <code class="pattern">${escapeHTML(group.pattern)}</code></p>`;
+      group.tests.forEach((t) => {
+        html += `<div class="case ${t.pass ? 'pass' : 'fail'}">${t.message}</div>`;
+      });
+      html += `</div>`;
+    });
+
+    // Summary
+    html += `<div class="summary ${failed === 0 ? 'passed' : 'failed'}">`;
+    html += `<h2>${failed === 0 ? '✅ All Tests Passed' : '❌ Some Tests Failed'}</h2>`;
+    html += `<p>${passed}/${total} passed, ${failed} failed.</p>`;
+    html += `</div>`;
+
+    resultsEl.innerHTML = html;
+
+    function escapeHTML(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
