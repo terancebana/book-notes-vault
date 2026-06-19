@@ -1,5 +1,3 @@
-// app.js — Main entry: initializes app, wires events, orchestrates modules
-
 import { seedIfEmpty, exportJSON, importJSON, resetAll as resetStorage } from './storage.js';
 import {
   initState,
@@ -32,30 +30,18 @@ import {
   showToast,
 } from './ui.js';
 
-// ─── Bootstrap ──────────────────────────────────────────────
-
 async function bootstrap() {
   initState();
   const state = getState();
 
-  // Seed from seed.json if first run
   const seeded = await seedIfEmpty();
-  if (seeded) {
-    seedRecords(seeded);
-  }
+  if (seeded) seedRecords(seeded);
 
-  // Initial render
   refreshUI(state);
-
-  // Wire global events
   wireNav();
   wireKeyboard();
-
-  // Re-render on any state change
   onStateChange(refreshUI);
 }
-
-// ─── Refresh UI ─────────────────────────────────────────────
 
 function refreshUI(state) {
   renderNav(state);
@@ -82,9 +68,7 @@ function refreshUI(state) {
   }
 }
 
-// ─── Navigation ─────────────────────────────────────────────
-// Uses event delegation on bottom-nav so listeners survive re-renders
-
+// Uses event delegation so listeners survive re-renders
 function wireNav() {
   const nav = document.querySelector('.bottom-nav');
   if (!nav || nav.dataset.wired === 'true') return;
@@ -95,8 +79,6 @@ function wireNav() {
     setActiveSection(btn.dataset.section);
   });
 }
-
-// ─── Form ───────────────────────────────────────────────────
 
 function wireForm() {
   const form = document.getElementById('book-form');
@@ -128,11 +110,9 @@ function handleFormSubmit() {
     tag: document.getElementById('field-tag').value,
   };
 
-  // Clear previous errors
   document.querySelectorAll('.error-msg').forEach((el) => (el.textContent = ''));
   document.querySelectorAll('.form-group input.error, .form-group select.error').forEach((el) => el.classList.remove('error'));
 
-  // Validate
   const errors = validators.validateAll(fields);
   if (errors.length > 0) {
     errors.forEach((err) => {
@@ -141,9 +121,7 @@ function handleFormSubmit() {
       if (msgEl) msgEl.textContent = err.message;
       if (inputEl) inputEl.classList.add('error');
     });
-    // Focus first error
-    const firstErrInput = document.getElementById(`field-${errors[0].field}`);
-    if (firstErrInput) firstErrInput.focus();
+    document.getElementById(`field-${errors[0].field}`)?.focus();
     return;
   }
 
@@ -159,9 +137,8 @@ function handleFormSubmit() {
     });
     showToast('Book updated!', 'success');
   } else {
-    const newId = 'rec_' + Date.now().toString(36);
     addRecord({
-      id: newId,
+      id: 'rec_' + Date.now().toString(36),
       title: fields.title.trim(),
       author: fields.author.trim(),
       pages: parseInt(fields.pages, 10),
@@ -176,8 +153,6 @@ function handleFormSubmit() {
   setEditingId(null);
   setActiveSection('records');
 }
-
-// ─── Records ────────────────────────────────────────────────
 
 function wireRecords() {
   document.getElementById('search-input').addEventListener('input', (e) => {
@@ -215,8 +190,6 @@ function wireRecords() {
     });
   });
 }
-
-// ─── Settings ───────────────────────────────────────────────
 
 function wireSettings() {
   const newTagInput = document.getElementById('new-tag-input');
@@ -285,11 +258,8 @@ function wireSettings() {
   });
 }
 
-// ─── Keyboard ───────────────────────────────────────────────
-
 function wireKeyboard() {
   document.addEventListener('keydown', (e) => {
-    // Escape to go to dashboard
     if (e.key === 'Escape' && !document.querySelector('.modal-overlay')) {
       setEditingId(null);
       setActiveSection('dashboard');
@@ -297,7 +267,5 @@ function wireKeyboard() {
     }
   });
 }
-
-// ─── Start ──────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', bootstrap);

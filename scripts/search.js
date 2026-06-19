@@ -1,5 +1,3 @@
-// search.js — Safe regex compiler, highlight matches, filter records
-
 // Compile a regex safely — never crash on bad user input
 export function compileRegex(input, flags = 'i') {
   if (!input || !input.trim()) return null;
@@ -10,21 +8,19 @@ export function compileRegex(input, flags = 'i') {
   }
 }
 
-// Highlight matches with <mark> — safe, escapes HTML to prevent XSS
+// Highlight matches with <mark> — escapes HTML to prevent XSS
 export function highlightMatches(text, regex) {
   if (!regex) return escapeHTML(text);
   const escaped = escapeHTML(text);
   return escaped.replace(regex, (match) => `<mark>${match}</mark>`);
 }
 
-// Escape HTML special characters
 function escapeHTML(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
 }
 
-// Search records: match against title, author, tag, and description
 export function searchRecords(records, query, flags = 'i') {
   if (!query || !query.trim()) return records;
 
@@ -40,7 +36,6 @@ export function searchRecords(records, query, flags = 'i') {
   });
 }
 
-// Sort records by a given field
 export function sortRecords(records, sortBy, sortDir) {
   return [...records].sort((a, b) => {
     let valA, valB;

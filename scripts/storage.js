@@ -1,10 +1,7 @@
-// storage.js — localStorage persistence + JSON import/export with validation
-
 const STORAGE_KEY = 'bookvault:records';
 const SETTINGS_KEY = 'bookvault:settings';
 const DEFAULTS_KEY = 'bookvault:seeded';
 
-// Load records from localStorage
 export function loadRecords() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -18,7 +15,6 @@ export function loadRecords() {
   }
 }
 
-// Save records to localStorage
 export function saveRecords(records) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
@@ -29,7 +25,6 @@ export function saveRecords(records) {
   }
 }
 
-// Load settings from localStorage, merged with defaults
 export function loadSettings() {
   const defaults = {
     tags: ['Fiction', 'Non-Fiction', 'Reference', 'Notes', 'Research', 'Other'],
@@ -46,7 +41,6 @@ export function loadSettings() {
   }
 }
 
-// Save settings to localStorage
 export function saveSettings(settings) {
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
@@ -57,11 +51,8 @@ export function saveSettings(settings) {
   }
 }
 
-// Seed localStorage from seed.json on first load.
-// seed.json ships with fixed June-2025 dates; without rebasing, the dashboard's
-// 7-day chart and monthly cap would render empty whenever the app is opened in a
-// later month. rebaseSeedDates anchors the records to "today" so first-run always
-// shows a populated dashboard. Books/content are unchanged — only dates move.
+// Seed from seed.json on first load, rebasing dates to the last 7 days so the
+// dashboard chart/cap are never empty when the app is opened months later.
 export async function seedIfEmpty() {
   if (localStorage.getItem(DEFAULTS_KEY)) return;
   try {
@@ -79,16 +70,12 @@ export async function seedIfEmpty() {
   return null;
 }
 
-// Spread the seed records evenly across the last 7 days, newest first.
-// Preserves the original record order (seed.json is newest-first) and only
-// rewrites the date fields so the dashboard chart/cap show activity on first run.
 function rebaseSeedDates(records) {
   const n = records.length;
   if (n === 0) return records;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return records.map((rec, i) => {
-    // i=0 → today; i=n-1 → 6 days ago, evenly distributed.
     const daysAgo = n === 1 ? 0 : Math.round((i / (n - 1)) * 6);
     const d = new Date(today);
     d.setDate(d.getDate() - daysAgo);
@@ -102,7 +89,6 @@ function rebaseSeedDates(records) {
   });
 }
 
-// Export records as downloadable JSON file
 export function exportJSON(records) {
   const blob = new Blob([JSON.stringify(records, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -113,7 +99,6 @@ export function exportJSON(records) {
   URL.revokeObjectURL(url);
 }
 
-// Import JSON from file upload — returns validated records or throws
 export function importJSON(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -140,7 +125,6 @@ export function importJSON(file) {
   });
 }
 
-// Validate a single record structure
 function validateRecord(obj) {
   if (!obj || typeof obj !== 'object') return false;
   const required = ['id', 'title', 'author', 'pages', 'tag', 'dateAdded'];
@@ -156,7 +140,6 @@ function validateRecord(obj) {
   return true;
 }
 
-// Reset all data
 export function resetAll() {
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem(SETTINGS_KEY);

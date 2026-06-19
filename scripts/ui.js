@@ -1,9 +1,5 @@
-// ui.js — All DOM rendering: sections, stats, forms, records, settings
-
 import { compileRegex, highlightMatches } from './search.js';
 import { exportJSON } from './storage.js';
-
-// ─── Navigation ─────────────────────────────────────────────
 
 const NAV_ICONS = {
   dashboard: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`,
@@ -37,13 +33,10 @@ export function renderNav(state) {
     .join('');
 }
 
-// ─── Sections Visibility ────────────────────────────────────
-
 export function showSection(sectionId) {
   document.querySelectorAll('main > section').forEach((s) => {
     s.hidden = s.id !== sectionId;
   });
-  // Update document title
   const labels = {
     dashboard: 'Dashboard',
     records: 'Records',
@@ -54,29 +47,17 @@ export function showSection(sectionId) {
   document.title = `${labels[sectionId] || sectionId} — Book & Notes Vault`;
 }
 
-// ─── Dashboard ──────────────────────────────────────────────
-
 export function renderDashboard(state, stats) {
   const el = document.getElementById('dashboard');
   if (!el || el.hidden) return;
 
-  const {
-    totalRecords,
-    totalPages,
-    topTag,
-    days,
-    pagesThisMonth,
-    cap,
-    remaining,
-    readingTime,
-  } = stats;
+  const { totalRecords, totalPages, topTag, days, pagesThisMonth, cap, remaining, readingTime } = stats;
 
   const capStatus = remaining >= 0 ? 'under' : 'over';
   const capAria = remaining >= 0 ? 'polite' : 'assertive';
-  const readingTimeStr =
-    readingTime.hours > 0
-      ? `${readingTime.hours}h ${readingTime.minutes}m`
-      : `${readingTime.minutes}m`;
+  const readingTimeStr = readingTime.hours > 0
+    ? `${readingTime.hours}h ${readingTime.minutes}m`
+    : `${readingTime.minutes}m`;
 
   el.innerHTML = `
     <h2>Dashboard</h2>
@@ -105,7 +86,7 @@ export function renderDashboard(state, stats) {
         <div class="cap-fill ${capStatus}" style="width:${Math.min(100, (pagesThisMonth / cap) * 100)}%"></div>
       </div>
       <p class="cap-text" aria-live="${capAria}" role="status">
-        ${pagesThisMonth} / ${cap} pages this month — 
+        ${pagesThisMonth} / ${cap} pages this month —
         ${remaining >= 0 ? `${remaining} remaining` : `${Math.abs(remaining)} over cap`}
       </p>
     </div>
@@ -113,22 +94,17 @@ export function renderDashboard(state, stats) {
     <div class="chart-section">
       <h3>Last 7 Days</h3>
       <div class="chart-bars" role="img" aria-label="Bar chart of pages added over last 7 days">
-        ${days
-          .map(
-            (d) =>
-              `<div class="chart-bar-wrap" title="${d.date}: ${d.pages} pages">
-                <div class="chart-bar" style="height:${d.pages ? Math.max(8, Math.min(120, d.pages / 5)) : 4}px"></div>
-                <span class="chart-label">${d.label}</span>
-                <span class="chart-val">${d.pages}</span>
-              </div>`
-          )
-          .join('')}
+        ${days.map((d) =>
+          `<div class="chart-bar-wrap" title="${d.date}: ${d.pages} pages">
+            <div class="chart-bar" style="height:${d.pages ? Math.max(8, Math.min(120, d.pages / 5)) : 4}px"></div>
+            <span class="chart-label">${d.label}</span>
+            <span class="chart-val">${d.pages}</span>
+          </div>`
+        ).join('')}
       </div>
     </div>
   `;
 }
-
-// ─── Records Table / Cards ──────────────────────────────────
 
 export function renderRecords(state, records) {
   const el = document.getElementById('records');
@@ -137,7 +113,6 @@ export function renderRecords(state, records) {
   const regex = compileRegex(state.ui.searchQuery, state.ui.searchFlags);
   const isMobile = window.innerWidth < 768;
 
-  // Search bar + sort controls
   el.innerHTML = `
     <h2>Records</h2>
     <div class="records-toolbar">
@@ -225,8 +200,6 @@ function renderRow(rec, regex) {
     </div>`;
 }
 
-// ─── Add/Edit Form ──────────────────────────────────────────
-
 export function renderForm(state) {
   const el = document.getElementById('form');
   if (!el || el.hidden) return;
@@ -287,8 +260,6 @@ export function renderForm(state) {
   `;
 }
 
-// ─── Settings ───────────────────────────────────────────────
-
 export function renderSettings(state) {
   const el = document.getElementById('settings');
   if (!el || el.hidden) return;
@@ -301,10 +272,7 @@ export function renderSettings(state) {
       <p class="help-text">Manage the list of tags available when adding books.</p>
       <div class="tags-list" id="tags-list">
         ${state.settings.tags
-          .map(
-            (t) =>
-              `<span class="tag-chip">${escapeHTML(t)} <button class="tag-remove" data-tag="${escapeAttr(t)}" aria-label="Remove tag ${escapeAttr(t)}">×</button></span>`
-          )
+          .map((t) => `<span class="tag-chip">${escapeHTML(t)} <button class="tag-remove" data-tag="${escapeAttr(t)}" aria-label="Remove tag ${escapeAttr(t)}">×</button></span>`)
           .join('')}
       </div>
       <div class="add-tag-row">
@@ -344,11 +312,8 @@ export function renderSettings(state) {
   `;
 }
 
-// ─── Confirmation Modal ─────────────────────────────────────
-
 export function showConfirm(message) {
   return new Promise((resolve) => {
-    // Remove existing modal
     const old = document.getElementById('confirm-modal');
     if (old) old.remove();
 
@@ -370,10 +335,7 @@ export function showConfirm(message) {
     document.body.appendChild(modal);
 
     const onKey = (e) => {
-      if (e.key === 'Escape') {
-        cleanup();
-        resolve(false);
-      }
+      if (e.key === 'Escape') { cleanup(); resolve(false); }
     };
     const cleanup = () => {
       modal.remove();
@@ -388,23 +350,16 @@ export function showConfirm(message) {
   });
 }
 
-// ─── Import Feedback ────────────────────────────────────────
-
 export function showImportPrompt() {
   return new Promise((resolve) => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
-    input.addEventListener('change', () => {
-      if (input.files[0]) resolve(input.files[0]);
-      else resolve(null);
-    });
+    input.addEventListener('change', () => resolve(input.files[0] || null));
     input.addEventListener('cancel', () => resolve(null));
     input.click();
   });
 }
-
-// ─── Toast notification ─────────────────────────────────────
 
 export function showToast(message, type = 'info') {
   const old = document.querySelector('.toast');
@@ -419,8 +374,6 @@ export function showToast(message, type = 'info') {
 
   setTimeout(() => toast.remove(), 3000);
 }
-
-// ─── Helpers ────────────────────────────────────────────────
 
 function highlight(val, regex) {
   return regex ? highlightMatches(val, regex) : escapeHTML(val);
