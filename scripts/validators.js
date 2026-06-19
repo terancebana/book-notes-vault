@@ -1,9 +1,22 @@
 // validators.js — Regex validation rules for Book & Notes Vault
 // 5 basic rules + 1 advanced (duplicate word back-reference)
+//
+// PATTERNS is the single source of truth for every regex used here.
+// It is exported so the test page (tests.html) can display and assert
+// against the exact same patterns — no drift between app and tests.
+
+export const PATTERNS = {
+  author: /^[A-Za-z]+(?:[ .\-]+[A-Za-z]+)*$/,
+  pages: /^(0|[1-9]\d*)$/,
+  date: /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/,
+  tag: /^[A-Za-z]+(?:[ -][A-Za-z]+)*$/,
+  titleDoubleSpace: /\s{2,}/,
+  duplicateWords: /\b(\w+)\s+\1\b/i,
+};
 
 const validators = {};
 
-// Rule 1: Title — no leading/trailing spaces, no double spaces
+// Rule 1: Title — required, 2–150 chars, no leading/trailing spaces, no double spaces
 validators.title = (value) => {
   if (!value || !value.trim()) {
     return { valid: false, message: 'Title is required.' };
@@ -14,7 +27,7 @@ validators.title = (value) => {
   if (value !== value.trim()) {
     return { valid: false, message: 'Title must not have leading or trailing spaces.' };
   }
-  if (/\s{2,}/.test(value)) {
+  if (PATTERNS.titleDoubleSpace.test(value)) {
     return { valid: false, message: 'Title must not contain double spaces.' };
   }
   if (value.length > 150) {
@@ -25,7 +38,7 @@ validators.title = (value) => {
 
 // Advanced Regex: Back-reference — reject duplicate consecutive words (e.g. "The The Book")
 validators.titleNoDuplicates = (value) => {
-  if (/\b(\w+)\s+\1\b/i.test(value)) {
+  if (PATTERNS.duplicateWords.test(value)) {
     return { valid: false, message: 'Title contains duplicate consecutive words.' };
   }
   return { valid: true, message: '' };
@@ -36,7 +49,7 @@ validators.author = (value) => {
   if (!value || !value.trim()) {
     return { valid: false, message: 'Author is required.' };
   }
-  if (!/^[A-Za-z]+(?:[ .\-]+[A-Za-z]+)*$/.test(value)) {
+  if (!PATTERNS.author.test(value)) {
     return { valid: false, message: 'Author must contain only letters, spaces, hyphens, and periods.' };
   }
   if (value.length > 100) {
@@ -51,7 +64,7 @@ validators.pages = (value) => {
     return { valid: false, message: 'Pages is required.' };
   }
   const str = String(value).trim();
-  if (!/^(0|[1-9]\d*)$/.test(str)) {
+  if (!PATTERNS.pages.test(str)) {
     return { valid: false, message: 'Pages must be a positive whole number.' };
   }
   const num = parseInt(str, 10);
@@ -66,7 +79,7 @@ validators.date = (value) => {
   if (!value) {
     return { valid: false, message: 'Date is required.' };
   }
-  if (!/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(value)) {
+  if (!PATTERNS.date.test(value)) {
     return { valid: false, message: 'Date must be in YYYY-MM-DD format.' };
   }
   // Validate actual calendar date (catches Feb 30, etc.)
@@ -83,7 +96,7 @@ validators.tag = (value) => {
   if (!value || !value.trim()) {
     return { valid: false, message: 'Tag is required.' };
   }
-  if (!/^[A-Za-z]+(?:[ -][A-Za-z]+)*$/.test(value)) {
+  if (!PATTERNS.tag.test(value)) {
     return { valid: false, message: 'Tag must contain only letters, spaces, and hyphens.' };
   }
   return { valid: true, message: '' };

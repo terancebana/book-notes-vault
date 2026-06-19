@@ -192,16 +192,13 @@ function renderRecordsList(records, regex, isMobile, state) {
 }
 
 function renderCard(rec, regex) {
-  const hTitle = regex ? highlightMatches(rec.title, regex) : escapeHTML(rec.title);
-  const hAuthor = regex ? highlightMatches(rec.author, regex) : escapeHTML(rec.author);
-  const hTag = regex ? highlightMatches(rec.tag, regex) : escapeHTML(rec.tag);
   return `
     <div class="record-card" role="listitem" data-id="${rec.id}">
       <div class="card-body">
-        <h3 class="card-title">${hTitle}</h3>
-        <p class="card-author">by ${hAuthor}</p>
+        <h3 class="card-title">${highlight(rec.title, regex)}</h3>
+        <p class="card-author">by ${highlight(rec.author, regex)}</p>
         <div class="card-meta">
-          <span class="badge">${hTag}</span>
+          <span class="badge">${highlight(rec.tag, regex)}</span>
           <span>${rec.pages} pages</span>
           <span>${rec.dateAdded}</span>
         </div>
@@ -214,15 +211,12 @@ function renderCard(rec, regex) {
 }
 
 function renderRow(rec, regex) {
-  const hTitle = regex ? highlightMatches(rec.title, regex) : escapeHTML(rec.title);
-  const hAuthor = regex ? highlightMatches(rec.author, regex) : escapeHTML(rec.author);
-  const hTag = regex ? highlightMatches(rec.tag, regex) : escapeHTML(rec.tag);
   return `
     <div class="table-row" role="row" data-id="${rec.id}">
-      <span role="cell" class="cell-title">${hTitle}</span>
-      <span role="cell">${hAuthor}</span>
+      <span role="cell" class="cell-title">${highlight(rec.title, regex)}</span>
+      <span role="cell">${highlight(rec.author, regex)}</span>
       <span role="cell">${rec.pages}</span>
-      <span role="cell"><span class="badge">${hTag}</span></span>
+      <span role="cell"><span class="badge">${highlight(rec.tag, regex)}</span></span>
       <span role="cell">${rec.dateAdded}</span>
       <span role="cell" class="cell-actions">
         <button class="btn btn-sm edit-btn" data-id="${rec.id}" aria-label="Edit ${escapeAttr(rec.title)}">Edit</button>
@@ -350,36 +344,6 @@ export function renderSettings(state) {
   `;
 }
 
-// ─── About ──────────────────────────────────────────────────
-
-export function renderAbout() {
-  const el = document.getElementById('about');
-  if (!el || el.hidden) return;
-
-  el.innerHTML = `
-    <h2>About Book & Notes Vault</h2>
-    <div class="about-content">
-      <p>Book & Notes Vault is a personal library tracker built with vanilla HTML, CSS, and JavaScript. 
-      Keep track of your books, tag them by category, and monitor your reading progress.</p>
-      <h3>Features</h3>
-      <ul>
-        <li>Add, edit, and delete book records</li>
-        <li>Regex-powered live search with match highlighting</li>
-        <li>Sort by title, author, pages, or date</li>
-        <li>Dashboard with reading stats and 7-day trend</li>
-        <li>Monthly pages cap with live progress tracking</li>
-        <li>Reading time estimator</li>
-        <li>JSON import/export with validation</li>
-        <li>Full keyboard accessibility</li>
-        <li>Responsive design (mobile, tablet, desktop)</li>
-      </ul>
-      <h3>Contact</h3>
-      <p>Built as a summative assignment for Building Responsive UI.</p>
-      <p>GitHub: <a href="https://github.com/terancebana" target="_blank" rel="noopener">@terancebana</a></p>
-    </div>
-  `;
-}
-
 // ─── Confirmation Modal ─────────────────────────────────────
 
 export function showConfirm(message) {
@@ -457,6 +421,10 @@ export function showToast(message, type = 'info') {
 }
 
 // ─── Helpers ────────────────────────────────────────────────
+
+function highlight(val, regex) {
+  return regex ? highlightMatches(val, regex) : escapeHTML(val);
+}
 
 function escapeHTML(str) {
   const div = document.createElement('div');

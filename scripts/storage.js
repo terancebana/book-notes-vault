@@ -57,21 +57,49 @@ export function saveSettings(settings) {
   }
 }
 
-// Seed localStorage from seed.json on first load
+// Seed localStorage from seed.json on first load.
+// seed.json ships with fixed June-2025 dates; without rebasing, the dashboard's
+// 7-day chart and monthly cap would render empty whenever the app is opened in a
+// later month. rebaseSeedDates anchors the records to "today" so first-run always
+// shows a populated dashboard. Books/content are unchanged — only dates move.
 export async function seedIfEmpty() {
   if (localStorage.getItem(DEFAULTS_KEY)) return;
   try {
     const resp = await fetch('seed.json');
     const data = await resp.json();
     if (Array.isArray(data) && data.length > 0) {
-      saveRecords(data);
+      const seeded = rebaseSeedDates(data.filter(validateRecord));
+      saveRecords(seeded);
       localStorage.setItem(DEFAULTS_KEY, 'true');
-      return data;
+      return seeded;
     }
   } catch (e) {
     console.warn('Could not load seed data:', e);
   }
   return null;
+}
+
+// Spread the seed records evenly across the last 7 days, newest first.
+// Preserves the original record order (seed.json is newest-first) and only
+// rewrites the date fields so the dashboard chart/cap show activity on first run.
+function rebaseSeedDates(records) {
+  const n = records.length;
+  if (n === 0) return records;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return records.map((rec, i) => {
+    // i=0 → today; i=n-1 → 6 days ago, evenly distributed.
+    const daysAgo = n === 1 ? 0 : Math.round((i / (n - 1)) * 6);
+    const d = new Date(today);
+    d.setDate(d.getDate() - daysAgo);
+    const dateStr = d.toISOString().split('T')[0];
+    return {
+      ...rec,
+      dateAdded: dateStr,
+      createdAt: `${dateStr}T00:00:00Z`,
+      updatedAt: `${dateStr}T00:00:00Z`,
+    };
+  });
 }
 
 // Export records as downloadable JSON file

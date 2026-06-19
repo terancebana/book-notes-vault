@@ -27,7 +27,6 @@ import {
   renderRecords,
   renderForm,
   renderSettings,
-  renderAbout,
   showConfirm,
   showImportPrompt,
   showToast,
@@ -50,10 +49,6 @@ async function bootstrap() {
 
   // Wire global events
   wireNav();
-  wireForm();
-  wireRecords();
-  wireSettings();
-  wireAbout();
   wireKeyboard();
 
   // Re-render on any state change
@@ -83,10 +78,6 @@ function refreshUI(state) {
     case 'settings':
       renderSettings(state);
       wireSettings(); // re-wire after render
-      break;
-    case 'about':
-      renderAbout();
-      wireAbout();
       break;
   }
 }
@@ -189,41 +180,23 @@ function handleFormSubmit() {
 // ─── Records ────────────────────────────────────────────────
 
 function wireRecords() {
-  // Search
-  const searchInput = document.getElementById('search-input');
-  if (searchInput) {
-    searchInput.addEventListener('input', (e) => {
-      setSearch(e.target.value, getState().ui.searchFlags);
-    });
-  }
+  document.getElementById('search-input').addEventListener('input', (e) => {
+    setSearch(e.target.value, getState().ui.searchFlags);
+  });
 
-  // Case toggle
-  const caseBtn = document.getElementById('search-case-btn');
-  if (caseBtn) {
-    caseBtn.addEventListener('click', () => {
-      const current = getState().ui.searchFlags;
-      const next = current === 'i' ? '' : 'i';
-      setSearch(getState().ui.searchQuery, next);
-    });
-  }
+  document.getElementById('search-case-btn').addEventListener('click', () => {
+    const current = getState().ui.searchFlags;
+    setSearch(getState().ui.searchQuery, current === 'i' ? '' : 'i');
+  });
 
-  // Sort
-  const sortSelect = document.getElementById('sort-select');
-  if (sortSelect) {
-    sortSelect.addEventListener('change', (e) => {
-      setSort(e.target.value, getState().ui.sortDir);
-    });
-  }
+  document.getElementById('sort-select').addEventListener('change', (e) => {
+    setSort(e.target.value, getState().ui.sortDir);
+  });
 
-  const sortDirBtn = document.getElementById('sort-dir-btn');
-  if (sortDirBtn) {
-    sortDirBtn.addEventListener('click', () => {
-      const next = getState().ui.sortDir === 'asc' ? 'desc' : 'asc';
-      setSort(getState().ui.sortBy, next);
-    });
-  }
+  document.getElementById('sort-dir-btn').addEventListener('click', () => {
+    setSort(getState().ui.sortBy, getState().ui.sortDir === 'asc' ? 'desc' : 'asc');
+  });
 
-  // Edit buttons
   document.querySelectorAll('.edit-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       setEditingId(btn.dataset.id);
@@ -231,15 +204,12 @@ function wireRecords() {
     });
   });
 
-  // Delete buttons
   document.querySelectorAll('.delete-btn').forEach((btn) => {
     btn.addEventListener('click', async () => {
-      const id = btn.dataset.id;
-      const rec = getState().records.find((r) => r.id === id);
-      const title = rec ? rec.title : 'this book';
-      const confirmed = await showConfirm(`Delete "${title}"? This cannot be undone.`);
+      const rec = getState().records.find((r) => r.id === btn.dataset.id);
+      const confirmed = await showConfirm(`Delete "${rec ? rec.title : 'this book'}"? This cannot be undone.`);
       if (confirmed) {
-        deleteRecord(id);
+        deleteRecord(btn.dataset.id);
         showToast('Book deleted.', 'info');
       }
     });
@@ -249,103 +219,70 @@ function wireRecords() {
 // ─── Settings ───────────────────────────────────────────────
 
 function wireSettings() {
-  // Tags — add
-  const addTagBtn = document.getElementById('add-tag-btn');
   const newTagInput = document.getElementById('new-tag-input');
   const errNewTag = document.getElementById('err-new-tag');
 
-  if (addTagBtn && newTagInput) {
-    addTagBtn.addEventListener('click', () => {
-      const value = newTagInput.value.trim();
-      if (errNewTag) errNewTag.textContent = '';
+  document.getElementById('add-tag-btn').addEventListener('click', () => {
+    const value = newTagInput.value.trim();
+    errNewTag.textContent = '';
 
-      const tagCheck = validators.tag(value);
-      if (!tagCheck.valid) {
-        if (errNewTag) errNewTag.textContent = tagCheck.message;
-        return;
-      }
+    const tagCheck = validators.tag(value);
+    if (!tagCheck.valid) {
+      errNewTag.textContent = tagCheck.message;
+      return;
+    }
 
-      const current = getState().settings.tags;
-      if (current.includes(value)) {
-        if (errNewTag) errNewTag.textContent = 'Tag already exists.';
-        return;
-      }
+    const current = getState().settings.tags;
+    if (current.includes(value)) {
+      errNewTag.textContent = 'Tag already exists.';
+      return;
+    }
 
-      updateSettings({ tags: [...current, value] });
-      newTagInput.value = '';
-    });
-  }
+    updateSettings({ tags: [...current, value] });
+    newTagInput.value = '';
+  });
 
-  // Tags — remove
   document.querySelectorAll('.tag-remove').forEach((btn) => {
     btn.addEventListener('click', () => {
-      const tag = btn.dataset.tag;
-      const current = getState().settings.tags;
-      updateSettings({ tags: current.filter((t) => t !== tag) });
+      updateSettings({ tags: getState().settings.tags.filter((t) => t !== btn.dataset.tag) });
     });
   });
 
-  // Reading speed
-  const speedInput = document.getElementById('reading-speed');
-  if (speedInput) {
-    speedInput.addEventListener('change', () => {
-      const val = parseFloat(speedInput.value);
-      if (val > 0) updateSettings({ readingSpeed: val });
-    });
-  }
+  document.getElementById('reading-speed').addEventListener('change', (e) => {
+    const val = parseFloat(e.target.value);
+    if (val > 0) updateSettings({ readingSpeed: val });
+  });
 
-  // Pages cap
-  const capInput = document.getElementById('pages-cap');
-  if (capInput) {
-    capInput.addEventListener('change', () => {
-      const val = parseInt(capInput.value, 10);
-      if (val > 0) updateSettings({ pagesCap: val });
-    });
-  }
+  document.getElementById('pages-cap').addEventListener('change', (e) => {
+    const val = parseInt(e.target.value, 10);
+    if (val > 0) updateSettings({ pagesCap: val });
+  });
 
-  // Export
-  const exportBtn = document.getElementById('export-btn');
-  if (exportBtn) {
-    exportBtn.addEventListener('click', () => {
-      exportJSON(getState().records);
-      showToast('Exported!', 'success');
-    });
-  }
+  document.getElementById('export-btn').addEventListener('click', () => {
+    exportJSON(getState().records);
+    showToast('Exported!', 'success');
+  });
 
-  // Import
-  const importBtn = document.getElementById('import-btn');
-  if (importBtn) {
-    importBtn.addEventListener('click', async () => {
-      const file = await showImportPrompt();
-      if (!file) return;
-      try {
-        const records = await importJSON(file);
-        importRecords(records);
-        showToast(`Imported ${records.length} records.`, 'success');
-      } catch (err) {
-        showToast(err.message, 'error');
-      }
-    });
-  }
+  document.getElementById('import-btn').addEventListener('click', async () => {
+    const file = await showImportPrompt();
+    if (!file) return;
+    try {
+      const records = await importJSON(file);
+      importRecords(records);
+      showToast(`Imported ${records.length} records.`, 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  });
 
-  // Reset
-  const resetBtn = document.getElementById('reset-btn');
-  if (resetBtn) {
-    resetBtn.addEventListener('click', async () => {
-      const confirmed = await showConfirm('Reset ALL data? This cannot be undone.');
-      if (confirmed) {
-        resetStorage();
-        resetAll();
-        showToast('All data reset.', 'info');
-      }
-    });
-  }
-}
-
-// ─── About ──────────────────────────────────────────────────
-
-function wireAbout() {
-  // About is static, but we wire it on first render
+  document.getElementById('reset-btn').addEventListener('click', async () => {
+    const confirmed = await showConfirm('Reset ALL data? This cannot be undone.');
+    if (confirmed) {
+      resetStorage();
+      resetAll();
+      showToast('All data reset.', 'info');
+    }
+  });
 }
 
 // ─── Keyboard ───────────────────────────────────────────────
